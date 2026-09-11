@@ -1,13 +1,59 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b0805;
-  --foreground: #fcf6ee;
-  --thenga-husk: #1b130c;
-  --thenga-husk-light: #2c2014;
-  --thenga-border: #42301f;
-  --thenga-accent: #22c55e;
-  --thenga-amber: #f59e0b;
+  /* ==================================================================
+   * THENGA OS PIXEL PALETTE — Kerala Nature & Retro Computer
+   * High contrast, bold blocky colors like classic 16-bit adventure games.
+   * No washed-out beige or generic corporate pastels.
+   * ================================================================== */
+  --background: #38a5db;
+  --foreground: #1c1108;
+
+  /* Sky & Atmosphere */
+  --thenga-sky-top: #73c8ee;
+  --thenga-sky-mid: #3ba7de;
+  --thenga-sky-deep: #258ac2;
+  --thenga-sun: #ffe666;
+  --thenga-cloud: #ffffff;
+  --thenga-cloud-shadow: #cce7f5;
+
+  /* Kerala Nature & Canopy */
+  --thenga-leaf-light: #7bcd2f;
+  --thenga-leaf-mid: #2b9e38;
+  --thenga-leaf-deep: #166b26;
+  --thenga-leaf-dark: #0e4518;
+  --thenga-hills-far: #2f8b52;
+  --thenga-hills-mid: #1d6e3c;
+
+  /* Earth, Wood & Terracotta */
+  --thenga-soil: #543114;
+  --thenga-soil-dark: #381f0b;
+  --thenga-terracotta: #c24b23;
+  --thenga-terracotta-dark: #913113;
+  --thenga-bark-light: #824f28;
+  --thenga-bark-dark: #583316;
+  --thenga-coconut-shell: #613919;
+  --thenga-coconut-dark: #3d220e;
+  --thenga-coconut-water: #eef9fc;
+
+  /* Retro UI & Chrome */
+  --thenga-ink: #191008;
+  --thenga-panel-face: #fdf7e7;
+  --thenga-panel-light: #fffdf6;
+  --thenga-panel-subtle: #f4ebd2;
+  --thenga-panel-dark: #e8d7ae;
+  --thenga-taskbar: #e5cb87;
+  --thenga-taskbar-active: #d6b86a;
+  --thenga-accent-gold: #f5a81e;
+  --thenga-accent-gold-dark: #c9820e;
+  --thenga-accent-cyan: #269a94;
+  --thenga-accent-green: #298d36;
+  --thenga-accent-red: #c93b2b;
+
+  /* Terminal & Boot CRT */
+  --thenga-terminal-bg: #0c0805;
+  --thenga-terminal-text: #3de865;
+  --thenga-terminal-amber: #f8b824;
 }
 
 @theme inline {
@@ -15,31 +61,221 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-pixel: var(--font-pixel);
+}
+
+* {
+  image-rendering: pixelated;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-mono), monospace, system-ui, sans-serif;
   user-select: none;
   -webkit-user-select: none;
+  overflow: hidden;
 }
 
-/* Retro CRT / Matrix dot grid for coconut desktop */
-.coconut-desktop-grid {
-  background-image: 
-    radial-gradient(circle at 1px 1px, rgba(217, 119, 6, 0.08) 1px, transparent 0),
-    linear-gradient(to right, rgba(24, 17, 10, 0.4) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(24, 17, 10, 0.4) 1px, transparent 1px);
-  background-size: 32px 32px, 64px 64px, 64px 64px;
+/* Bitmap display type for titles, BIOS, achievements, dialog headers */
+.thenga-pixel {
+  font-family: var(--font-pixel), monospace;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
 }
 
-/* Subtle CRT scanline effect */
-.crt-scanlines {
-  background: linear-gradient(
-    rgba(18, 16, 16, 0) 50%, 
-    rgba(0, 0, 0, 0.25) 50%
-  );
-  background-size: 100% 4px;
-  pointer-events: none;
+/* ==================================================================
+ * PIXEL-ART CHROME FRAMEWORK
+ * Chunky ink borders, flat offset shadows, zero soft blur
+ * ================================================================== */
+.thenga-pixel-frame {
+  border: 3px solid var(--thenga-ink);
+  background-color: var(--thenga-panel-face);
+  box-shadow: 4px 4px 0 var(--thenga-ink);
+}
+
+.thenga-pixel-frame-sm {
+  border: 2px solid var(--thenga-ink);
+  background-color: var(--thenga-panel-face);
+  box-shadow: 2px 2px 0 var(--thenga-ink);
+}
+
+.thenga-pixel-frame-inset {
+  border: 2px solid var(--thenga-ink);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.25), inset -2px -2px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Chunky retro button with tactile step-press */
+.thenga-pixel-btn {
+  border: 2px solid var(--thenga-ink);
+  background-color: var(--thenga-panel-face);
+  box-shadow: 2px 2px 0 var(--thenga-ink);
+  transition: transform 60ms steps(2), box-shadow 60ms steps(2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.thenga-pixel-btn:hover {
+  background-color: var(--thenga-panel-light);
+}
+
+.thenga-pixel-btn:active,
+.thenga-pixel-btn[data-active="true"] {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--thenga-ink);
+}
+
+/* CRT Screen Scanline Texture */
+.thenga-crt-screen {
+  background-color: var(--thenga-terminal-bg);
+  background-image:
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 3px, 6px 100%;
+}
+
+/* Technical pixel grid for BIOS and monitors */
+.thenga-pixel-grid {
+  background-image:
+    linear-gradient(to right, rgba(46, 204, 113, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(46, 204, 113, 0.1) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Coarse retro dither grain */
+.thenga-dither {
+  background-image: radial-gradient(rgba(25, 16, 8, 0.12) 1.5px, transparent 1.5px);
+  background-size: 4px 4px;
+}
+
+/* Desktop Icon Selection */
+.thenga-desktop-icon {
+  border: 2px solid transparent;
+  transition: background-color 80ms steps(2);
+}
+
+.thenga-desktop-icon:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  border: 2px dotted rgba(25, 16, 8, 0.4);
+}
+
+.thenga-desktop-icon[data-selected="true"] {
+  background-color: rgba(245, 168, 30, 0.35);
+  border: 2px solid var(--thenga-ink);
+  box-shadow: 2px 2px 0 rgba(25, 16, 8, 0.3);
+}
+
+/* ==================================================================
+ * ANIMATIONS & KEYFRAMES
+ * ================================================================== */
+@keyframes thenga-window-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.thenga-window-in {
+  animation: thenga-window-pop 120ms steps(4) both;
+}
+
+/* Notification slide in */
+@keyframes thenga-toast-drop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.thenga-toast-anim {
+  animation: thenga-toast-drop 160ms steps(5) both;
+}
+
+/* Subtle leaf / palm sway */
+@keyframes thenga-leaf-sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2.5deg); }
+}
+.thenga-sway {
+  transform-origin: 50% 100%;
+  animation: thenga-leaf-sway 6s steps(10) infinite;
+}
+.thenga-sway-slow {
+  transform-origin: 50% 100%;
+  animation: thenga-leaf-sway 8.5s steps(12) infinite;
+}
+
+/* Slow horizontal cloud drift */
+@keyframes thenga-cloud-drift {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(160px); }
+}
+.thenga-cloud-move-1 {
+  animation: thenga-cloud-drift 45s linear infinite;
+}
+.thenga-cloud-move-2 {
+  animation: thenga-cloud-drift 70s linear infinite;
+}
+
+/* Screen shake for impact / max Malayalam annoyance */
+@keyframes thenga-quake {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-5px, 3px); }
+  30% { transform: translate(4px, -4px); }
+  45% { transform: translate(-3px, 2px); }
+  60% { transform: translate(3px, -2px); }
+  75% { transform: translate(-2px, 1px); }
+  90% { transform: translate(1px, -1px); }
+}
+.thenga-shake {
+  animation: thenga-quake 320ms steps(7) 1;
+}
+
+/* The Falling Coconut Physics Animation */
+@keyframes thenga-fall-bounce {
+  0% {
+    top: -60px;
+    transform: rotate(0deg);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  65% {
+    top: calc(100vh - 110px);
+    transform: rotate(240deg);
+  }
+  /* First Bounce */
+  75% {
+    top: calc(100vh - 165px);
+    transform: rotate(310deg);
+  }
+  /* Land */
+  85% {
+    top: calc(100vh - 105px);
+    transform: rotate(380deg);
+  }
+  /* Small secondary roll */
+  93% {
+    top: calc(100vh - 120px);
+    transform: rotate(410deg);
+  }
+  100% {
+    top: calc(100vh - 105px);
+    transform: rotate(430deg);
+    opacity: 1;
+  }
+}
+
+.thenga-falling-coconut {
+  position: absolute;
+  animation-name: thenga-fall-bounce;
+  animation-timing-function: steps(16);
+  animation-fill-mode: forwards;
 }
