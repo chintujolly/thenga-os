@@ -1,18 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  Search,
-  Terminal,
-  FolderTree,
-  Activity,
-  AlertTriangle,
-  Settings,
-  Power,
-  RotateCcw,
-  Sparkles,
-} from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 import { WindowId } from "@/types/window";
+import PixelIcon from "./PixelIcon";
+import PixelCoconut from "./PixelCoconut";
+import { sound } from "@/utils/sound";
 
 interface StartMenuProps {
   isOpen: boolean;
@@ -20,241 +12,206 @@ interface StartMenuProps {
   onLaunchApp?: (appId: WindowId) => void;
 }
 
-interface AppShortcut {
-  id: WindowId | "panic" | "settings";
+type CategoryName = "SYSTEM" | "COCONUT" | "QUESTIONABLE NECESSITIES";
+
+interface LauncherItem {
+  id: WindowId;
   name: string;
-  category: string;
-  icon: typeof Terminal;
-  description: string;
+  desc: string;
+  category: CategoryName;
   badge?: string;
 }
 
-const APPS: AppShortcut[] = [
-  {
-    id: "terminal",
-    name: "Thenga Terminal",
-    category: "System",
-    icon: Terminal,
-    description: "Coconut shell CLI & fiber commands",
-    badge: "CLI",
-  },
-  {
-    id: "explorer",
-    name: "Thenga Explorer",
-    category: "Files",
-    icon: FolderTree,
-    description: "Browse folders, fibers, & copra",
-    badge: "VFS",
-  },
-  {
-    id: "kola-manager",
-    name: "Kola Manager",
-    category: "Monitoring",
-    icon: Activity,
-    description: "Inspect active coconut threads & juices",
-    badge: "Stats",
-  },
-  {
-    id: "panic",
-    name: "Kernel Panic (Why?)",
-    category: "Diagnostics",
-    icon: AlertTriangle,
-    description: "Panic simulator (no kernel exists)",
-    badge: "404",
-  },
-  {
-    id: "settings",
-    name: "Thenga Settings",
-    category: "Preferences",
-    icon: Settings,
-    description: "Adjust husk density & palm theme",
-  },
+const LAUNCHER_ITEMS: LauncherItem[] = [
+  // SYSTEM
+  { id: "terminal", name: "Terminal", desc: "Coconut fiber shell & commands", category: "SYSTEM", badge: "CLI" },
+  { id: "explorer", name: "Explorer", desc: "Browse canopy VFS folders", category: "SYSTEM", badge: "VFS" },
+  { id: "task-manager", name: "Task Manager", desc: "Live system processes & juice RAM", category: "SYSTEM" },
+  { id: "readme", name: "README.the", desc: "System documentation manual", category: "SYSTEM" },
+
+  // COCONUT
+  { id: "kola-manager", name: "Kola Manager", desc: "Active coconut bunches & threads", category: "COCONUT" },
+  { id: "bin", name: "Copra Bin", desc: "Recycle discarded shells & husks", category: "COCONUT" },
+  { id: "calculator", name: "Coconut Calculator", desc: "Arithmetic, coconut-flavored", category: "COCONUT" },
+  { id: "physics", name: "Coconut Physics", desc: "Discover gravity. Bounce coconuts.", category: "COCONUT" },
+
+  // QUESTIONABLE NECESSITIES
+  { id: "defender", name: "Thenga Defender", desc: "Scan and remove suspicious coconuts", category: "QUESTIONABLE NECESSITIES", badge: "SAFE" },
+  { id: "achievements", name: "Achievements", desc: "Trophy room of coconut milestones", category: "QUESTIONABLE NECESSITIES" },
 ];
+
+const CATEGORIES: CategoryName[] = ["SYSTEM", "COCONUT", "QUESTIONABLE NECESSITIES"];
 
 export default function StartMenu({ isOpen, onClose, onLaunchApp }: StartMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [powerNotice, setPowerNotice] = useState<string | null>(null);
 
-  // Close when clicking outside or pressing Escape
+  // Close on outside click or Escape
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
-
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  const filteredApps = APPS.filter(
-    (app) =>
-      app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredItems = LAUNCHER_ITEMS.filter(
+    (item) =>
+      item.name.toLowerCase().includes(search.toLowerCase()) ||
+      item.desc.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleAppClick = (app: AppShortcut) => {
-    if (app.id === "terminal" || app.id === "explorer" || app.id === "kola-manager") {
-      if (onLaunchApp) {
-        onLaunchApp(app.id);
-      }
-      onClose();
-      return;
-    }
-
-    setStatusMessage(`App "${app.name}" will be ready in future updates.`);
-    setTimeout(() => setStatusMessage(null), 2500);
+  const handleLaunch = (id: WindowId) => {
+    sound.playClick();
+    onLaunchApp?.(id);
+    onClose();
   };
 
-  const handlePowerAction = (action: string) => {
-    setStatusMessage(`Coconut cannot ${action.toLowerCase()}. It is purely vegetative.`);
-    setTimeout(() => setStatusMessage(null), 2500);
+  const handlePower = (action: string) => {
+    sound.playClick();
+    setPowerNotice(`Cannot ${action.toLowerCase()} coconut: It is purely vegetative.`);
+    setTimeout(() => setPowerNotice(null), 2500);
   };
 
   return (
     <div
       ref={menuRef}
-      className="absolute bottom-14 left-2 sm:left-4 w-[calc(100vw-1rem)] sm:w-[420px] max-h-[580px] bg-[#1a120b]/95 backdrop-blur-xl border border-[#483321] rounded-2xl shadow-2xl overflow-hidden flex flex-col z-50 text-amber-100 transition-all duration-200 animate-in fade-in slide-in-from-bottom-3"
+      className="thenga-window-in thenga-pixel-frame absolute bottom-12 left-2 sm:left-4 w-[min(94vw,390px)] max-h-[calc(100vh-70px)] z-50 flex flex-col font-mono text-xs text-[#191008] overflow-hidden shadow-[5px_5px_0_#191008]"
       role="dialog"
-      aria-label="Thenga OS Launcher"
+      aria-label="Thenga OS Start Menu"
     >
-      {/* Top Header / Coconut Profile */}
-      <div className="p-4 bg-gradient-to-r from-[#2c1d12] via-[#20150d] to-[#160e09] border-b border-[#3d2a1b] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-600 to-amber-950 border border-amber-400/40 flex items-center justify-center text-2xl shadow-inner">
-            🥥
-          </div>
+      {/* Header Bar */}
+      <div className="p-3 bg-[#f5a81e] border-b-3 border-[#191008] flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <PixelCoconut state="sitting" size={28} />
           <div>
-            <div className="text-sm font-semibold text-amber-100 flex items-center gap-1.5">
-              <span>Chief Thenga Climber</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="thenga-pixel text-[11px] font-bold text-[#191008] leading-tight">
+              THENGA OS
             </div>
-            <p className="text-[11px] text-amber-300/70 font-mono">
-              THENGA OS v0.1 • Organic Edition
-            </p>
+            <div className="text-[10px] text-[#4d2b10] leading-tight">
+              Operating system for things that don&apos;t need one.
+            </div>
           </div>
-        </div>
-        <div className="text-right">
-          <span className="inline-block px-2 py-0.5 rounded-full text-[10px] bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-mono">
-            Husk: Intact
-          </span>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="p-3 border-b border-[#302114] bg-[#150e08]/70">
-        <div className="relative flex items-center">
-          <Search className="w-4 h-4 text-amber-400/60 absolute left-3 pointer-events-none" />
+      {/* User profile strip */}
+      <div className="px-3 py-1.5 bg-[#ecdba8] border-b-2 border-[#191008] flex items-center justify-between text-[10px]">
+        <span className="font-bold">Chief Thenga Climber</span>
+        <span className="bg-[#2b9e38] text-white px-1.5 py-0.2 font-bold text-[9px] border border-[#191008]">
+          Husk: Intact
+        </span>
+      </div>
+
+      {/* Retro Search Box */}
+      <div className="p-2.5 bg-[#f4ebd2] border-b-2 border-[#191008]">
+        <div className="flex items-center border-2 border-[#191008] bg-white px-2 py-1 shadow-[inset_1px_1px_0_rgba(0,0,0,0.15)]">
+          <span className="text-[#6b4728] mr-1.5">🔍</span>
           <input
             type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search apps, husk files, or copra..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-[#251910] border border-[#422e1e] text-amber-100 placeholder:text-amber-300/40 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-mono"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search programs..."
+            className="w-full bg-transparent border-none outline-none font-mono text-xs text-[#191008] placeholder:text-[#6b4728]/50"
             autoFocus
           />
         </div>
       </div>
 
-      {/* App List Area */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-1 max-h-[320px]">
-        <div className="text-[10px] uppercase font-mono tracking-wider text-amber-400/60 px-2 py-1 font-semibold">
-          Pinned Applications
-        </div>
-
-        {filteredApps.length === 0 ? (
-          <div className="text-center py-6 text-xs text-amber-300/50">
-            No coconut apps found matching &ldquo;{searchQuery}&rdquo;
+      {/* Categorized Applications List */}
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-3 bg-[#fdf7e7] max-h-[380px]">
+        {filteredItems.length === 0 ? (
+          <div className="text-center py-6 text-xs text-[#6b4728]">
+            No coconut programs found.
           </div>
         ) : (
-          filteredApps.map((app) => {
-            const Icon = app.icon;
+          CATEGORIES.map((category) => {
+            const items = filteredItems.filter((i) => i.category === category);
+            if (items.length === 0) return null;
             return (
-              <button
-                key={app.id}
-                type="button"
-                onClick={() => handleAppClick(app)}
-                className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 border border-transparent hover:border-[#4b3522] transition-all text-left group cursor-pointer"
-              >
-                <div className="w-8 h-8 rounded-lg bg-[#271b12] border border-[#4d3623] flex items-center justify-center text-amber-300 group-hover:scale-105 group-hover:text-emerald-400 group-hover:border-emerald-500/50 transition-all">
-                  <Icon className="w-4 h-4" />
+              <div key={category} className="space-y-1">
+                <div className="text-[10px] font-bold tracking-wider text-[#6b4728] px-1 uppercase flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-[#f5a81e] inline-block border border-[#191008]" />
+                  <span>{category}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-amber-100 group-hover:text-amber-200 truncate">
-                      {app.name}
-                    </span>
-                    {app.badge && (
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-900/40 text-amber-300/80 border border-amber-800/40 font-mono">
-                        {app.badge}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-amber-300/60 truncate">
-                    {app.description}
-                  </p>
+                <div className="space-y-0.5">
+                  {items.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleLaunch(item.id)}
+                      className="w-full flex items-center gap-2.5 p-1.5 hover:bg-[#ecdba8] border border-transparent hover:border-[#191008] transition-colors text-left cursor-pointer group select-none"
+                    >
+                      <div className="shrink-0 group-hover:scale-110 transition-transform">
+                        <PixelIcon id={item.id} size={22} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs truncate text-[#191008]">
+                            {item.name}
+                          </span>
+                          {item.badge && (
+                            <span className="text-[9px] px-1 py-0.2 bg-[#d8c593] border border-[#191008] font-bold">
+                              {item.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-[#6b4728] truncate">
+                          {item.desc}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-              </button>
+              </div>
             );
           })
         )}
 
-        {/* Temporary Feedback Message */}
-        {statusMessage && (
-          <div className="p-2 mt-2 text-xs bg-amber-950/80 border border-amber-600/50 rounded-lg text-amber-200 text-center font-mono animate-in fade-in">
-            {statusMessage}
+        {powerNotice && (
+          <div className="p-2 bg-[#ecdba8] border border-[#191008] text-[10px] text-center font-bold text-[#c93b2b]">
+            {powerNotice}
           </div>
         )}
       </div>
 
-      {/* Kerala Coconut Brainrot Quote Bar */}
-      <div className="px-4 py-2 bg-[#120c07] border-t border-[#2d1e12] flex items-center gap-2 text-[11px] text-amber-300/80">
-        <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-        <span className="truncate italic">
-          &ldquo;Naalikeram nanma niranja bhoomi...&rdquo;
+      {/* Footer / System Power Control */}
+      <div className="p-2 bg-[#d6b86a] border-t-3 border-[#191008] flex items-center justify-between">
+        <span className="text-[10px] font-bold text-[#4d2b10]">
+          ORGANIC EDITION v0.1
         </span>
-      </div>
-
-      {/* Footer / System Control Buttons */}
-      <div className="p-3 bg-[#170f09] border-t border-[#382618] flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <span className="text-[11px] font-mono text-amber-400/60">
-            KERA-SYS 100% OK
-          </span>
-        </div>
-
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            onClick={() => handlePowerAction("Restart")}
+            onClick={() => handlePower("Restart")}
             title="Restart Coconut"
-            className="p-1.5 rounded-lg hover:bg-white/10 text-amber-300 hover:text-amber-100 transition-colors cursor-pointer"
+            className="thenga-pixel-btn px-2 py-0.5 text-[10px] font-bold bg-[#fdf7e7] hover:bg-white"
           >
-            <RotateCcw className="w-4 h-4" />
+            RESTART
           </button>
           <button
             type="button"
-            onClick={() => handlePowerAction("Power Off")}
-            title="De-husk / Power Off"
-            className="p-1.5 rounded-lg hover:bg-red-950/50 text-red-400 hover:text-red-200 transition-colors cursor-pointer"
+            onClick={() => handlePower("De-husk")}
+            title="De-husk / Power Down"
+            className="thenga-pixel-btn px-2 py-0.5 text-[10px] font-bold bg-[#c93b2b] text-white hover:bg-[#e04533]"
           >
-            <Power className="w-4 h-4" />
+            DE-HUSK
           </button>
         </div>
       </div>

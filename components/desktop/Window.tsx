@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useRef, useState, useCallback, useEffect } from "react";
-import { Minus, Square, Copy, X } from "lucide-react";
+import React, { useRef, useState, useEffect } from "react";
 import { WindowState } from "@/types/window";
+import { sound } from "@/utils/sound";
 
 interface WindowProps {
   window: WindowState;
   children: React.ReactNode;
   icon?: React.ReactNode;
+  isFocused?: boolean;
   onFocus: (id: WindowState["id"]) => void;
   onClose: (id: WindowState["id"]) => void;
   onMinimize: (id: WindowState["id"]) => void;
@@ -15,10 +16,16 @@ interface WindowProps {
   onMove: (id: WindowState["id"], newPos: { x: number; y: number }) => void;
 }
 
+/**
+ * Window: Chunky retro OS window frame.
+ * Distinct active/inactive title bars, small square controls,
+ * sharp pixel corners, dark ink borders, and hard offset shadows.
+ */
 export default function Window({
   window: win,
   children,
   icon,
+  isFocused = false,
   onFocus,
   onClose,
   onMinimize,
@@ -35,12 +42,8 @@ export default function Window({
 
   // Handle Drag Start
   const handleTitleBarMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only drag with left click and avoid dragging when maximized
     if (e.button !== 0 || win.isMaximized) return;
-
-    // Bring to front
     onFocus(win.id);
-
     setIsDragging(true);
     dragRef.current = {
       startX: e.clientX,
@@ -48,11 +51,10 @@ export default function Window({
       initialX: win.position.x,
       initialY: win.position.y,
     };
-
     e.preventDefault();
   };
 
-  // Mouse move and mouse up listeners for dragging
+  // Mouse move and mouse up listeners for window dragging
   useEffect(() => {
     if (!isDragging) return;
 
@@ -79,12 +81,10 @@ export default function Window({
     };
   }, [isDragging, onMove, win.id]);
 
-  // If minimized, do not display in the workspace
   if (win.isMinimized) {
     return null;
   }
 
-  // Dynamic window position and sizing styles
   const windowStyle: React.CSSProperties = win.isMaximized
     ? {
         position: "absolute",
@@ -100,8 +100,8 @@ export default function Window({
         top: `${win.position.y}px`,
         width: `${win.size.width}px`,
         height: `${win.size.height}px`,
-        maxWidth: "calc(100vw - 16px)",
-        maxHeight: "calc(100vh - 64px)",
+        maxWidth: "calc(100vw - 12px)",
+        maxHeight: "calc(100vh - 58px)",
         zIndex: win.zIndex,
       };
 
@@ -109,73 +109,85 @@ export default function Window({
     <div
       style={windowStyle}
       onMouseDown={() => onFocus(win.id)}
-      className={`flex flex-col bg-[#140e08]/95 backdrop-blur-xl border border-[#4d3622] shadow-[0_16px_36px_rgba(0,0,0,0.6)] overflow-hidden transition-all duration-75 ${
-        win.isMaximized ? "rounded-none" : "rounded-xl"
+      className={`thenga-window-in flex flex-col border-3 border-[#191008] overflow-hidden select-none font-mono ${
+        win.isMaximized
+          ? "rounded-none shadow-none"
+          : isFocused
+          ? "shadow-[5px_5px_0_#191008]"
+          : "shadow-[3px_3px_0_#191008] opacity-95"
       }`}
       role="region"
       aria-label={`${win.title} Window`}
     >
-      {/* Window Title Bar */}
+      {/* Title Bar */}
       <div
         onMouseDown={handleTitleBarMouseDown}
-        className={`h-9 px-3 bg-gradient-to-r from-[#2a1c12] via-[#20150d] to-[#180f09] border-b border-[#3e2b1b] flex items-center justify-between select-none cursor-grab active:cursor-grabbing ${
-          win.isMaximized ? "cursor-default active:cursor-default" : ""
-        }`}
+        className={`h-8 px-2 border-b-2 border-[#191008] flex items-center justify-between cursor-grab active:cursor-grabbing ${
+          isFocused ? "bg-[#f5a81e] text-[#191008]" : "bg-[#d8c593] text-[#191008]/70"
+        } ${win.isMaximized ? "cursor-default active:cursor-default" : ""}`}
       >
         {/* App Icon & Title */}
         <div className="flex items-center gap-2 overflow-hidden pointer-events-none">
-          {icon && <span className="text-amber-400 shrink-0">{icon}</span>}
-          <span className="font-mono font-semibold text-xs text-amber-100 truncate tracking-wide">
+          {icon && <span className="shrink-0">{icon}</span>}
+          <span className="font-bold text-[11px] truncate tracking-wider uppercase">
             {win.title}
           </span>
+          {isFocused && (
+            <span className="w-1.5 h-1.5 bg-[#2b9e38] inline-block border border-[#191008] shrink-0 ml-0.5" />
+          )}
         </div>
 
-        {/* Window Controls (Minimize, Maximize/Restore, Close) */}
+        {/* Square Retro Control Buttons */}
         <div
-          className="flex items-center gap-1.5 shrink-0"
+          className="flex items-center gap-1 shrink-0"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {/* Minimize Button */}
+          {/* Minimize [_] */}
           <button
             type="button"
-            onClick={() => onMinimize(win.id)}
+            onClick={() => {
+              sound.playClick();
+              onMinimize(win.id);
+            }}
             title="Minimize"
             aria-label="Minimize"
-            className="w-6 h-6 rounded flex items-center justify-center text-amber-300/80 hover:text-amber-100 hover:bg-amber-900/40 border border-transparent hover:border-amber-700/50 transition-colors cursor-pointer"
+            className="w-5 h-5 border border-[#191008] bg-[#fdf7e7] hover:bg-white active:translate-y-[1px] flex items-center justify-center font-bold text-[10px] cursor-pointer shadow-[1px_1px_0_#191008]"
           >
-            <Minus className="w-3.5 h-3.5" />
+            _
           </button>
 
-          {/* Maximize / Restore Button */}
+          {/* Maximize [□] */}
           <button
             type="button"
-            onClick={() => onMaximizeToggle(win.id)}
+            onClick={() => {
+              sound.playClick();
+              onMaximizeToggle(win.id);
+            }}
             title={win.isMaximized ? "Restore" : "Maximize"}
             aria-label={win.isMaximized ? "Restore" : "Maximize"}
-            className="w-6 h-6 rounded flex items-center justify-center text-amber-300/80 hover:text-amber-100 hover:bg-amber-900/40 border border-transparent hover:border-amber-700/50 transition-colors cursor-pointer"
+            className="w-5 h-5 border border-[#191008] bg-[#fdf7e7] hover:bg-white active:translate-y-[1px] flex items-center justify-center font-bold text-[10px] cursor-pointer shadow-[1px_1px_0_#191008]"
           >
-            {win.isMaximized ? (
-              <Copy className="w-3 h-3 rotate-180" />
-            ) : (
-              <Square className="w-3 h-3" />
-            )}
+            {win.isMaximized ? "❐" : "□"}
           </button>
 
-          {/* Close Button */}
+          {/* Close [X] */}
           <button
             type="button"
-            onClick={() => onClose(win.id)}
+            onClick={() => {
+              sound.playClick();
+              onClose(win.id);
+            }}
             title="Close"
             aria-label="Close"
-            className="w-6 h-6 rounded flex items-center justify-center text-amber-300/80 hover:text-red-200 hover:bg-red-900/60 border border-transparent hover:border-red-600/50 transition-colors cursor-pointer"
+            className="w-5 h-5 border border-[#191008] bg-[#fdf7e7] hover:bg-[#c93b2b] hover:text-white active:translate-y-[1px] flex items-center justify-center font-bold text-[10px] cursor-pointer shadow-[1px_1px_0_#191008]"
           >
-            <X className="w-3.5 h-3.5" />
+            ✕
           </button>
         </div>
       </div>
 
       {/* Window Content Area */}
-      <div className="flex-1 overflow-auto relative bg-[#0e0a06]">
+      <div className="flex-1 overflow-auto relative bg-[#fdf7e7] text-[#191008]">
         {children}
       </div>
     </div>
