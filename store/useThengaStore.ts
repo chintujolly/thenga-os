@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage, type StateStorage } from "zustand/middleware";
 
 export interface KolaItem {
   id: string;
@@ -131,49 +132,104 @@ interface ThengaStore {
   closeFile: () => void;
 }
 
-export const useThengaStore = create<ThengaStore>((set, get) => ({
-  kolas: [],
-  nextKolaId: 101,
-  createKola: () => {
-    const currentIdNum = get().nextKolaId;
-    const id = `#kola-${currentIdNum}`;
-    const bunchCount = Math.floor(Math.random() * 5) + 6; // 6 to 10 coconuts
-    const createdAt = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
+/* ------------------------------------------------------------------
+ * PERSISTENCE (client-side only)
+ * Only the Kola cluster state is meaningful to persist right now —
+ * ThengaFS is a fixed, read-only file list (no create/rename/delete
+ * yet) and openedFileId is transient dialog UI, so neither belongs
+ * in long-term storage. If ThengaFS gains real mutations later, add
+ * that slice to `partialize`/`merge` below.
+ * ------------------------------------------------------------------ */
 
-    const newKola: KolaItem = {
-      id,
-      bunchCount,
-      status: "Mounted in Canopy",
-      createdAt,
-    };
+type PersistedThengaState = Pick<ThengaStore, "kolas" | "nextKolaId">;
 
-    set((state) => ({
-      nextKolaId: state.nextKolaId + 1,
-      kolas: [newKola, ...state.kolas],
-    }));
+// No-op storage used during SSR / static build, where `window` and
+// localStorage do not exist. Keeps `next build` and server rendering
+// from crashing while still behaving correctly in the browser.
+const noopStorage: StateStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
 
-    return newKola;
-  },
+const thengaStorage = createJSONStorage<PersistedThengaState>(() =>
+  typeof window !== "undefined" ? window.localStorage : noopStorage
+);
 
-  files: THENGA_FILES,
-  openedFileId: null,
+export const useThengaStore = create<ThengaStore>()(
+  persist(
+    (set, get) => ({
+      kolas: [],
+      nextKolaId: 101,
+      createKola: () => {
+        const currentIdNum = get().nextKolaId;
+        const id = `#kola-${currentIdNum}`;
+        const bunchCount = Math.floor(Math.random() * 5) + 6; // 6 to 10 coconuts
+        const createdAt = new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
 
-  // Opening a file only flips in-app state and shows a dialog.
-  openFile: (id: string) => {
-    const file = get().files.find((f) => f.id === id);
-    if (!file) return;
+        const newKola: KolaItem = {
+          id,
+          bunchCount,
+          status: "Mounted in Canopy",
+          createdAt,
+        };
 
-    // Some files also trigger an existing simulated action
-    if (file.spawnsKola) {
-      get().createKola();
+        set((state) => ({
+          nextKolaId: state.nextKolaId + 1,
+          kolas: [newKola, ...state.kolas],
+        }));
+
+        return newKola;
+      },
+
+      files: THENGA_FILES,
+      openedFileId: null,
+
+      // Opening a file only flips in-app state and shows a dialog.
+      openFile: (id: string) => {
+        const file = get().files.find((f) => f.id === id);
+        if (!file) return;
+
+        // Some files also trigger an existing simulated action
+        if (file.spawnsKola) {
+          get().createKola();
+        }
+
+        set({ openedFileId: id });
+      },
+
+      closeFile: () => set({ openedFileId: null }),
+    }),
+    {
+      name: "thenga-os-storage",
+      storage: thengaStorage,
+      version: 1,
+      partialize: (state): PersistedThengaState => ({
+        kolas: state.kolas,
+        nextKolaId: state.nextKolaId,
+      }),
+      // Fall back to current (default) state if saved data is missing,
+      // corrupted, or the wrong shape, instead of trusting it blindly.
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as
+          | Partial<PersistedThengaState>
+          | null
+          | undefined;
+
+        const kolas = Array.isArray(persisted?.kolas)
+          ? persisted.kolas
+          : currentState.kolas;
+        const nextKolaId =
+          typeof persisted?.nextKolaId === "number"
+            ? persisted.nextKolaId
+            : currentState.nextKolaId;
+
+        return { ...currentState, kolas, nextKolaId };
+      },
     }
-
-    set({ openedFileId: id });
-  },
-
-  closeFile: () => set({ openedFileId: null }),
-}));
+  )
+);
