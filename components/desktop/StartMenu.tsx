@@ -12,15 +12,16 @@ import {
   RotateCcw,
   Sparkles,
 } from "lucide-react";
+import { WindowId } from "@/types/window";
 
 interface StartMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  onLaunchApp?: (appName: string) => void;
+  onLaunchApp?: (appId: WindowId) => void;
 }
 
 interface AppShortcut {
-  id: string;
+  id: WindowId | "panic" | "settings";
   name: string;
   category: string;
   icon: typeof Terminal;
@@ -109,10 +110,15 @@ export default function StartMenu({ isOpen, onClose, onLaunchApp }: StartMenuPro
   );
 
   const handleAppClick = (app: AppShortcut) => {
-    setStatusMessage(`App "${app.name}" will be ready in future updates.`);
-    if (onLaunchApp) {
-      onLaunchApp(app.name);
+    if (app.id === "terminal" || app.id === "explorer" || app.id === "kola-manager") {
+      if (onLaunchApp) {
+        onLaunchApp(app.id);
+      }
+      onClose();
+      return;
     }
+
+    setStatusMessage(`App "${app.name}" will be ready in future updates.`);
     setTimeout(() => setStatusMessage(null), 2500);
   };
 
