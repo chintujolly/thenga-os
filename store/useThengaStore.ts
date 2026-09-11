@@ -147,6 +147,68 @@ const DELETABLE_ITEM_NAMES = [
   "husk_dust.tmp",
 ];
 
+/* ------------------------------------------------------------------
+ * ACHIEVEMENTS
+ * Tiny unlock map, keyed by achievement id. No separate framework —
+ * just a record + one action, persisted alongside the rest of state.
+ * ------------------------------------------------------------------ */
+
+export interface AchievementDef {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+}
+
+export const ACHIEVEMENTS: AchievementDef[] = [
+  { id: "booted-thenga", name: "Booted the Thenga", description: "Opened THENGA OS.", emoji: "🥥" },
+  { id: "first-kola", name: "First Kola", description: "Create a Kola.", emoji: "🌴" },
+  { id: "terminal-survivor", name: "Terminal Survivor", description: "Use Terminal.", emoji: "💻" },
+  { id: "file-explorer", name: "File Explorer", description: "Open a file.", emoji: "📁" },
+  { id: "coconut-recycling", name: "Coconut Recycling", description: "Use Copra Bin.", emoji: "🗑" },
+  { id: "questionable-mathematics", name: "Questionable Mathematics", description: "Attempt division by zero.", emoji: "🧮" },
+  { id: "system-administrator", name: "System Administrator", description: "Open Task Manager.", emoji: "⚙" },
+  { id: "coconut-physics", name: "Coconut Gravity", description: "Drop a coconut.", emoji: "🌊" },
+  { id: "security-expert", name: "Security Expert", description: "Run Thenga Defender.", emoji: "🛡" },
+  { id: "virus-removed", name: "Virus Removed", description: "Survive Definitely_Not_A_Virus.thg.", emoji: "🦠" },
+  { id: "easter-egg", name: "Why Did You Click That?", description: "Found a secret.", emoji: "🐦" },
+  { id: "thenga-had-enough", name: "Thenga Has Had Enough", description: "Triggered maximum annoyance.", emoji: "😤" },
+];
+
+/* ------------------------------------------------------------------
+ * COCONUT EVENT LAYER
+ * A tiny reusable event system so any part of the OS (errors, the
+ * virus dialog, achievements, idle randomness) can make coconuts fall
+ * across the whole desktop without each feature hand-rolling its own
+ * animation. CoconutFallLayer renders these and removes them by id
+ * once their fall animation finishes.
+ * ------------------------------------------------------------------ */
+
+export interface CoconutFall {
+  id: number;
+  x: number; // vw percentage across the desktop
+  delayMs: number;
+  durationMs: number;
+  rotateDir: 1 | -1;
+  size: number; // px
+}
+
+/* ------------------------------------------------------------------
+ * MALAYALAM ANNOYANCE ESCALATION
+ * Repeatedly poking the same interactive element (the mascot, mainly)
+ * escalates the OS's reaction. Resets after a few seconds of quiet so
+ * the joke stays a discoverable surprise rather than a running counter.
+ * ------------------------------------------------------------------ */
+
+const ANNOYANCE_RESET_MS = 5000;
+const ANNOYANCE_MESSAGES = [
+  "Bro.",
+  "Enthina?",
+  "Eda mone...",
+  "Nirthada.",
+];
+const ANNOYANCE_MAX_MESSAGE = "THENGA OS HAS HAD ENOUGH.";
+
 interface ThengaStore {
   kolas: KolaItem[];
   nextKolaId: number;
@@ -163,6 +225,25 @@ interface ThengaStore {
   deleteSimulatedItem: () => CopraBinItem;
   restoreBinItem: (id: string) => void;
   emptyBin: () => void;
+  /** Achievement unlock state, keyed by achievement id */
+  unlockedAchievements: Record<string, boolean>;
+  unlockAchievement: (id: string) => void;
+  /** Small non-blocking toast notification, shown by DesktopShell */
+  toast: string | null;
+  showToast: (message: string) => void;
+  clearToast: () => void;
+  /** Coconut Event Layer — see CoconutFallLayer */
+  coconutFalls: CoconutFall[];
+  nextCoconutFallId: number;
+  spawnCoconutFall: (count?: number) => void;
+  clearCoconutFall: (id: number) => void;
+  /** Screen shake trigger for events and annoyance */
+  screenShake: boolean;
+  triggerScreenShake: () => void;
+  /** Malayalam annoyance escalation — see bumpAnnoyance */
+  annoyanceCount: number;
+  lastAnnoyanceAt: number;
+  bumpAnnoyance: () => string;
 }
 
 /* ------------------------------------------------------------------
@@ -176,7 +257,7 @@ interface ThengaStore {
 
 type PersistedThengaState = Pick<
   ThengaStore,
-  "kolas" | "nextKolaId" | "binItems" | "nextBinItemId"
+  "kolas" | "nextKolaId" | "binItems" | "nextBinItemId" | "unlockedAchievements"
 >;
 
 // No-op storage used during SSR / static build, where `window` and
@@ -219,6 +300,9 @@ export const useThengaStore = create<ThengaStore>()(
           kolas: [newKola, ...state.kolas],
         }));
 
+        get().unlockAchievement("first-kola");
+        get().showToast("🥥 New Kola generated.");
+
         return newKola;
       },
 
@@ -236,6 +320,8 @@ export const useThengaStore = create<ThengaStore>()(
         }
 
         set({ openedFileId: id });
+        get().unlockAchievement("file-explorer");
+        get().showToast("📁 File opened.");
       },
 
       closeFile: () => set({ openedFileId: null }),
@@ -269,12 +355,81 @@ export const useThengaStore = create<ThengaStore>()(
         return newItem;
       },
 
-      restoreBinItem: (id: string) =>
+      restoreBinItem: (id: string) => {
         set((state) => ({
           binItems: state.binItems.filter((item) => item.id !== id),
-        })),
+        }));
+        get().showToast("🗑 Coconut restored.");
+      },
 
       emptyBin: () => set({ binItems: [] }),
+
+      unlockedAchievements: {},
+      unlockAchievement: (id: string) => {
+        if (get().unlockedAchievements[id]) return; // already unlocked
+        const def = ACHIEVEMENTS.find((a) => a.id === id);
+        set((state) => ({
+          unlockedAchievements: { ...state.unlockedAchievements, [id]: true },
+        }));
+        if (def) {
+          get().showToast(`🏆 Achievement unlocked: ${def.name}`);
+        }
+      },
+
+      toast: null,
+      showToast: (message: string) => set({ toast: message }),
+      clearToast: () => set({ toast: null }),
+
+      coconutFalls: [],
+      nextCoconutFallId: 1,
+      spawnCoconutFall: (count = 1) => {
+        const startId = get().nextCoconutFallId;
+        const newFalls: CoconutFall[] = Array.from({ length: count }, (_, i) => ({
+          id: startId + i,
+          x: 6 + Math.random() * 88,
+          delayMs: Math.floor(Math.random() * count * 180),
+          durationMs: 1100 + Math.floor(Math.random() * 500),
+          rotateDir: Math.random() > 0.5 ? 1 : -1,
+          size: 22 + Math.floor(Math.random() * 14),
+        }));
+        set((state) => ({
+          nextCoconutFallId: startId + count,
+          coconutFalls: [...state.coconutFalls, ...newFalls],
+        }));
+      },
+      clearCoconutFall: (id: number) => {
+        set((state) => ({
+          coconutFalls: state.coconutFalls.filter((f) => f.id !== id),
+        }));
+      },
+
+      screenShake: false,
+      triggerScreenShake: () => {
+        set({ screenShake: true });
+        setTimeout(() => {
+          set({ screenShake: false });
+        }, 360);
+      },
+
+      annoyanceCount: 0,
+      lastAnnoyanceAt: 0,
+      bumpAnnoyance: () => {
+        const now = Date.now();
+        const isFresh = now - get().lastAnnoyanceAt < ANNOYANCE_RESET_MS;
+        const nextCount = isFresh ? get().annoyanceCount + 1 : 1;
+
+        if (nextCount > ANNOYANCE_MESSAGES.length) {
+          set({ annoyanceCount: 0, lastAnnoyanceAt: now });
+          get().unlockAchievement("thenga-had-enough");
+          get().triggerScreenShake();
+          get().spawnCoconutFall(5);
+          return ANNOYANCE_MAX_MESSAGE;
+        }
+
+        set({ annoyanceCount: nextCount, lastAnnoyanceAt: now });
+        if (nextCount === 1) get().unlockAchievement("easter-egg");
+        return ANNOYANCE_MESSAGES[nextCount - 1];
+      },
     }),
     {
       name: "thenga-os-storage",
@@ -285,6 +440,7 @@ export const useThengaStore = create<ThengaStore>()(
         nextKolaId: state.nextKolaId,
         binItems: state.binItems,
         nextBinItemId: state.nextBinItemId,
+        unlockedAchievements: state.unlockedAchievements,
       }),
       // Fall back to current (default) state if saved data is missing,
       // corrupted, or the wrong shape, instead of trusting it blindly.
@@ -308,8 +464,19 @@ export const useThengaStore = create<ThengaStore>()(
           typeof persisted?.nextBinItemId === "number"
             ? persisted.nextBinItemId
             : currentState.nextBinItemId;
+        const unlockedAchievements =
+          persisted?.unlockedAchievements && typeof persisted.unlockedAchievements === "object"
+            ? persisted.unlockedAchievements
+            : currentState.unlockedAchievements;
 
-        return { ...currentState, kolas, nextKolaId, binItems, nextBinItemId };
+        return {
+          ...currentState,
+          kolas,
+          nextKolaId,
+          binItems,
+          nextBinItemId,
+          unlockedAchievements,
+        };
       },
     }
   )
