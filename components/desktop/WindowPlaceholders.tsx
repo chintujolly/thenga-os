@@ -5,6 +5,7 @@ import { WindowId } from "@/types/window";
 import ThengaTerminal from "./ThengaTerminal";
 import KolaManager from "./KolaManager";
 import ThengaExplorer from "./ThengaExplorer";
+import CopraBin from "./CopraBin";
 
 export function TerminalPlaceholder() {
   return (
@@ -220,7 +221,7 @@ export function WindowPlaceholderContent({ id }: { id: WindowId }) {
     case "kola-manager":
       return <KolaManager />;
     case "bin":
-      return <CopraBinPlaceholder />;
+      return <CopraBin />;
     case "readme":
       return <ReadmePlaceholder />;
     default:

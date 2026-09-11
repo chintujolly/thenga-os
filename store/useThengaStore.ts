@@ -120,6 +120,33 @@ const THENGA_FILES: ThengaFile[] = [
   },
 ];
 
+/* ------------------------------------------------------------------
+ * COPRA BIN (Recycle Bin)
+ * A small, self-contained simulated bin. It is NOT wired to Explorer
+ * deletion (that would require larger architectural changes) — it
+ * has its own tiny predefined/generated coconut items instead.
+ * ------------------------------------------------------------------ */
+
+export interface CopraBinItem {
+  id: string;
+  name: string;
+  size: string;
+  deletedAt: string;
+}
+
+const INITIAL_BIN_ITEMS: CopraBinItem[] = [
+  { id: "bin-seed-1", name: "old_husk_fragment.the", size: "3 KB", deletedAt: "Yesterday" },
+  { id: "bin-seed-2", name: "expired_tender_water.thg", size: "1 KB", deletedAt: "2 days ago" },
+];
+
+const DELETABLE_ITEM_NAMES = [
+  "rotten_copra_batch.the",
+  "cracked_shell_fragment.thg",
+  "spilled_tender_water.txt",
+  "overripe_thenga.the",
+  "husk_dust.tmp",
+];
+
 interface ThengaStore {
   kolas: KolaItem[];
   nextKolaId: number;
@@ -130,6 +157,12 @@ interface ThengaStore {
   openedFileId: string | null;
   openFile: (id: string) => void;
   closeFile: () => void;
+  /** Simulated Copra Bin contents */
+  binItems: CopraBinItem[];
+  nextBinItemId: number;
+  deleteSimulatedItem: () => CopraBinItem;
+  restoreBinItem: (id: string) => void;
+  emptyBin: () => void;
 }
 
 /* ------------------------------------------------------------------
@@ -141,7 +174,10 @@ interface ThengaStore {
  * that slice to `partialize`/`merge` below.
  * ------------------------------------------------------------------ */
 
-type PersistedThengaState = Pick<ThengaStore, "kolas" | "nextKolaId">;
+type PersistedThengaState = Pick<
+  ThengaStore,
+  "kolas" | "nextKolaId" | "binItems" | "nextBinItemId"
+>;
 
 // No-op storage used during SSR / static build, where `window` and
 // localStorage do not exist. Keeps `next build` and server rendering
@@ -203,6 +239,42 @@ export const useThengaStore = create<ThengaStore>()(
       },
 
       closeFile: () => set({ openedFileId: null }),
+
+      binItems: INITIAL_BIN_ITEMS,
+      nextBinItemId: 1,
+
+      // Adds a harmless simulated item to the bin — no real file is touched.
+      deleteSimulatedItem: () => {
+        const currentIdNum = get().nextBinItemId;
+        const name = DELETABLE_ITEM_NAMES[currentIdNum % DELETABLE_ITEM_NAMES.length];
+        const sizeKb = Math.floor(Math.random() * 40) + 1;
+        const deletedAt = new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+
+        const newItem: CopraBinItem = {
+          id: `bin-${currentIdNum}`,
+          name,
+          size: `${sizeKb} KB`,
+          deletedAt,
+        };
+
+        set((state) => ({
+          nextBinItemId: state.nextBinItemId + 1,
+          binItems: [newItem, ...state.binItems],
+        }));
+
+        return newItem;
+      },
+
+      restoreBinItem: (id: string) =>
+        set((state) => ({
+          binItems: state.binItems.filter((item) => item.id !== id),
+        })),
+
+      emptyBin: () => set({ binItems: [] }),
     }),
     {
       name: "thenga-os-storage",
@@ -211,6 +283,8 @@ export const useThengaStore = create<ThengaStore>()(
       partialize: (state): PersistedThengaState => ({
         kolas: state.kolas,
         nextKolaId: state.nextKolaId,
+        binItems: state.binItems,
+        nextBinItemId: state.nextBinItemId,
       }),
       // Fall back to current (default) state if saved data is missing,
       // corrupted, or the wrong shape, instead of trusting it blindly.
@@ -227,8 +301,15 @@ export const useThengaStore = create<ThengaStore>()(
           typeof persisted?.nextKolaId === "number"
             ? persisted.nextKolaId
             : currentState.nextKolaId;
+        const binItems = Array.isArray(persisted?.binItems)
+          ? persisted.binItems
+          : currentState.binItems;
+        const nextBinItemId =
+          typeof persisted?.nextBinItemId === "number"
+            ? persisted.nextBinItemId
+            : currentState.nextBinItemId;
 
-        return { ...currentState, kolas, nextKolaId };
+        return { ...currentState, kolas, nextKolaId, binItems, nextBinItemId };
       },
     }
   )
