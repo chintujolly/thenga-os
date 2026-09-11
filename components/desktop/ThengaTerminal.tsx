@@ -32,6 +32,7 @@ export default function ThengaTerminal() {
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const createKola = useThengaStore((state) => state.createKola);
+  const kolas = useThengaStore((state) => state.kolas);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalBottomRef = useRef<HTMLDivElement>(null);
@@ -110,7 +111,14 @@ export default function ThengaTerminal() {
           </div>
           <div className="text-emerald-400">● Architecture: Cocos nucifera (64-fiber)</div>
           <div>● Kernel: Nil (No kernel, purely vegetative state)</div>
-          <div>● Juice RAM: 512 MB Tender Water (105 MB juiced, 407 MB available)</div>
+          <div>● Active Kolas Clustered: {kolas.length} (live sync with Kola Manager)</div>
+          <div>
+            ● Juice RAM: 512 MB Tender Water ({kolas.length * 12} MB juiced,{" "}
+            {512 - kolas.length * 12} MB available)
+          </div>
+          <div>
+            ● Latest Cluster: {kolas[0] ? `${kolas[0].id} (${kolas[0].bunchCount} coconuts)` : "none yet — run thenga-kola"}
+          </div>
           <div>● Husk Integrity: 100% (Weatherproof, salt-tolerant)</div>
           <div>● Tree Canopy Link: PalmLink-5G (Connected, Latency: 1ms)</div>
           <div className="text-emerald-300 font-semibold pt-1">
