@@ -5,11 +5,11 @@ import { useState, useEffect } from "react";
 export default function SystemClock() {
   const [timeString, setTimeString] = useState<string>("");
   const [dateString, setDateString] = useState<string>("");
-  const [mounted, setMounted] = useState<boolean>(false);
+  // Renders empty on the server and on first client paint (no mismatch),
+  // then flips true once the clock has a real value to show.
+  const mounted = timeString !== "";
 
   useEffect(() => {
-    setMounted(true);
-
     const updateClock = () => {
       const now = new Date();
       setTimeString(
@@ -36,22 +36,22 @@ export default function SystemClock() {
 
   if (!mounted) {
     return (
-      <div className="flex flex-col items-end text-xs font-mono px-2 py-0.5 text-amber-200/60 select-none">
+      <div className="flex flex-col items-end text-xs font-mono px-2 py-0.5 text-[#6B4B23]/75 select-none">
         <span>--:--:--</span>
-        <span className="text-[10px] text-amber-300/40">Loading...</span>
+        <span className="text-[10px] text-[#6B4B23]/45">Loading...</span>
       </div>
     );
   }
 
   return (
     <div
-      className="flex flex-col items-end text-xs font-mono px-2 py-0.5 rounded hover:bg-white/5 transition-colors cursor-default text-amber-100 select-none"
+      className="flex flex-col items-end text-xs font-mono px-2 py-0.5 rounded hover:bg-black/5 transition-colors cursor-default text-[#2B1D0E] select-none"
       title={`Kerala Standard Time\nDate: ${dateString}`}
     >
-      <span className="font-semibold tracking-wider text-amber-200">
+      <span className="font-semibold tracking-wider text-[#6B4B23]">
         {timeString}
       </span>
-      <span className="text-[10px] text-amber-300/70">{dateString}</span>
+      <span className="text-[10px] text-[#6B4B23]/75">{dateString}</span>
     </div>
   );
 }

@@ -1,55 +1,58 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import PixelCoconut from "./PixelCoconut";
+import { sound } from "@/utils/sound";
 
 interface BootScreenProps {
   onComplete: () => void;
 }
 
-// Simulated boot log lines. Purely cosmetic — nothing here touches
-// any real system, file, or process.
-const BOOT_LINES: string[] = [
-  "THENGA BIOS v0.1 — Cocos nucifera Systems",
-  "Checking husk integrity......... OK",
-  "Mounting tender water partition.. OK",
-  "Loading fiber drivers........... OK",
-  "Searching for kernel............ NOT FOUND (expected)",
-  "Falling back to pure vegetative state",
-  "Starting ThengaEngine daemon..... OK",
-  "Starting Kola cluster service.... OK",
-  "Calibrating canopy sensors....... OK",
-  "Mounting THENGA Explorer VFS..... OK",
-  "Welcome to THENGA OS.",
+const BIOS_MESSAGES = [
+  "THENGA BIOS v0.1 (C) 2026 Cocos Nucifera Systems",
+  "64-Fiber Organic CPU Detected @ 12.8 MHz",
+  "Checking husk........ OK",
+  "Checking juice....... 100%",
+  "Checking coconut..... PRESENT",
+  "Searching for kernel. NOT FOUND",
+  "Searching for purpose. NOT FOUND",
+  "Starting THENGA OS...",
 ];
 
-const LINE_DELAY_MS = 180;
-
 export default function BootScreen({ onComplete }: BootScreenProps) {
-  const [visibleCount, setVisibleCount] = useState(0);
+  const [lineIndex, setLineIndex] = useState(0);
+  const [showLogo, setShowLogo] = useState(false);
   const completedRef = useRef(false);
 
   const finish = () => {
     if (completedRef.current) return;
     completedRef.current = true;
+    sound.playAchievement();
     onComplete();
   };
 
-  // Reveal boot lines one at a time, then hand off to the desktop
   useEffect(() => {
-    if (visibleCount >= BOOT_LINES.length) {
-      const holdTimer = setTimeout(finish, 350);
+    if (lineIndex < BIOS_MESSAGES.length) {
+      sound.playClick();
+      const timer = setTimeout(() => {
+        setLineIndex((prev) => prev + 1);
+      }, 220);
+      return () => clearTimeout(timer);
+    } else if (!showLogo) {
+      sound.playChirp();
+      const logoTimer = setTimeout(() => {
+        setShowLogo(true);
+      }, 300);
+      return () => clearTimeout(logoTimer);
+    } else {
+      const holdTimer = setTimeout(() => {
+        finish();
+      }, 1000);
       return () => clearTimeout(holdTimer);
     }
+  }, [lineIndex, showLogo]);
 
-    const timer = setTimeout(() => {
-      setVisibleCount((count) => count + 1);
-    }, LINE_DELAY_MS);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleCount]);
-
-  // Allow skipping the boot sequence with a click or key press
+  // Skip on click or any keypress
   useEffect(() => {
     const handleSkip = () => finish();
     window.addEventListener("keydown", handleSkip);
@@ -58,58 +61,56 @@ export default function BootScreen({ onComplete }: BootScreenProps) {
       window.removeEventListener("keydown", handleSkip);
       window.removeEventListener("click", handleSkip);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const progress = Math.round((visibleCount / BOOT_LINES.length) * 100);
-
   return (
-    <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-[#0a0704] text-amber-100 select-none cursor-pointer">
-      <div className="absolute inset-0 coconut-desktop-grid pointer-events-none opacity-60" />
-      <div className="absolute inset-0 crt-scanlines opacity-40 pointer-events-none" />
-
-      <div className="relative w-[min(90vw,520px)] px-4">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-3xl">🥥</span>
-          <div>
-            <div className="font-mono font-extrabold tracking-widest text-amber-200 text-lg">
-              THENGA OS
-            </div>
-            <div className="font-mono text-[10px] text-amber-500/60">
-              VER 0.1 • COCOS NUCIFERA EDITION
-            </div>
-          </div>
+    <div className="thenga-crt-screen fixed inset-0 z-[999] flex flex-col items-center justify-center text-[#3de865] font-mono select-none p-4 cursor-pointer">
+      <div className="w-full max-w-md border-3 border-[#191008] bg-[#0c0805] p-4 space-y-4 shadow-[5px_5px_0_#191008]">
+        {/* BIOS Header */}
+        <div className="border-b-2 border-[#191008] pb-2 text-[10px] text-[#f8b824] flex items-center justify-between">
+          <span>KERA-ROM BIOS POST</span>
+          <span>MEM: 512 MB OK</span>
         </div>
 
-        <div className="font-mono text-[11px] sm:text-xs space-y-1 min-h-[220px]">
-          {BOOT_LINES.slice(0, visibleCount).map((line, idx) => (
+        {/* BIOS Boot Logs */}
+        <div className="space-y-1 text-xs min-h-[160px]">
+          {BIOS_MESSAGES.slice(0, lineIndex).map((msg, i) => (
             <div
-              key={idx}
+              key={i}
               className={
-                line.includes("NOT FOUND")
-                  ? "text-amber-400"
-                  : idx === BOOT_LINES.length - 1
-                  ? "text-emerald-300 font-semibold pt-1"
-                  : "text-emerald-400/90"
+                msg.includes("NOT FOUND")
+                  ? "text-[#f8b824] font-bold"
+                  : msg.includes("OK") || msg.includes("100%") || msg.includes("PRESENT")
+                  ? "text-[#3de865]"
+                  : "text-white/85"
               }
             >
-              {line}
+              {msg}
             </div>
           ))}
-          {visibleCount < BOOT_LINES.length && (
-            <span className="inline-block w-2 h-3.5 bg-emerald-400 animate-pulse align-middle" />
+          {lineIndex < BIOS_MESSAGES.length && (
+            <span className="inline-block w-2 h-3.5 bg-[#3de865] align-middle" />
           )}
         </div>
 
-        <div className="mt-5 w-full h-1.5 rounded-full bg-[#1c130c] border border-[#3b2718] overflow-hidden">
-          <div
-            className="h-full bg-emerald-500 transition-all duration-150 ease-linear"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+        {/* Brand Splash on Finish */}
+        {showLogo && (
+          <div className="thenga-window-in border-t-2 border-[#191008] pt-3 text-center space-y-2">
+            <div className="flex justify-center">
+              <PixelCoconut state="sitting" size={48} />
+            </div>
+            <div className="thenga-pixel text-lg text-[#f8b824] tracking-wider">
+              THENGA OS
+            </div>
+            <p className="text-xs text-white/80 italic font-bold">
+              &ldquo;No kernel. Just fiber.&rdquo;
+            </p>
+          </div>
+        )}
 
-        <div className="mt-2 text-center font-mono text-[10px] text-amber-500/40">
-          Click, tap, or press any key to skip
+        {/* Skip Tip */}
+        <div className="border-t border-[#191008] pt-2 text-center text-[10px] text-[#f8b824]/60">
+          Click or press any key to skip boot
         </div>
       </div>
     </div>
