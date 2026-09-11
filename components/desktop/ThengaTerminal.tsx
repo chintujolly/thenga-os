@@ -90,6 +90,12 @@ export default function ThengaTerminal() {
 
             <div><span className="font-bold text-amber-200">thenga-kola</span></div>
             <div className="text-amber-100/80">Generate a simulated coconut cluster (Kola)</div>
+
+            <div><span className="font-bold text-amber-200">thurakku</span></div>
+            <div className="text-amber-100/80">Simulated &quot;open&quot; command (harmless)</div>
+
+            <div><span className="font-bold text-amber-200">adakku</span></div>
+            <div className="text-amber-100/80">Simulated &quot;close&quot; command (harmless)</div>
           </div>
         </div>
       );
@@ -147,6 +153,34 @@ export default function ThengaTerminal() {
           </div>
           <div className="text-emerald-300 text-[11px] pt-0.5">
             ✓ Kola successfully mounted to palm tree canopy!
+          </div>
+        </div>
+      );
+    }
+    // 6. thurakku command ("open" in Malayalam) — harmless simulated action
+    else if (lower === "thurakku") {
+      outputNode = (
+        <div className="p-2 rounded bg-[#160f0a] border border-[#3b2718] text-xs font-mono space-y-1 text-amber-100">
+          <div className="text-emerald-400 font-bold">
+            🥥 THURAKKU — &quot;Open!&quot;
+          </div>
+          <div>Husk latch released. Canopy hatch swinging open in the breeze.</div>
+          <div className="text-amber-300/80 text-[11px]">
+            Nothing was actually opened. This coconut just likes the word.
+          </div>
+        </div>
+      );
+    }
+    // 7. adakku command ("close" in Malayalam) — harmless simulated action
+    else if (lower === "adakku") {
+      outputNode = (
+        <div className="p-2 rounded bg-[#160f0a] border border-[#3b2718] text-xs font-mono space-y-1 text-amber-100">
+          <div className="text-amber-300 font-bold">
+            🥥 ADAKKU — &quot;Close!&quot;
+          </div>
+          <div>Husk resealed. Tender water safely locked back in.</div>
+          <div className="text-amber-300/80 text-[11px]">
+            Nothing was actually closed. There was nothing open to begin with.
           </div>
         </div>
       );
