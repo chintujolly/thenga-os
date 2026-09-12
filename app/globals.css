@@ -279,3 +279,135 @@ body {
   animation-timing-function: steps(16);
   animation-fill-mode: forwards;
 }
+
+/* ==================================================================
+ * FLYING BIRDS / CROWS IN THE SKY
+ * Subtle, calm pixel-art crows gliding across the upper Kerala sky.
+ * Pure CSS keyframes, zero dependencies, no pointer interference.
+ * ================================================================== */
+@keyframes thenga-bird-flight-1 {
+  0% {
+    transform: translate3d(-60px, 0, 0);
+    opacity: 0;
+  }
+  2% {
+    opacity: 0.95;
+  }
+  25% {
+    transform: translate3d(25vw, -10px, 0);
+  }
+  50% {
+    transform: translate3d(50vw, 6px, 0);
+  }
+  75% {
+    transform: translate3d(75vw, -6px, 0);
+  }
+  98% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(calc(100vw + 60px), 0, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes thenga-bird-flight-2 {
+  0% {
+    transform: translate3d(-50px, 0, 0);
+    opacity: 0;
+  }
+  2% {
+    opacity: 0.85;
+  }
+  25% {
+    transform: translate3d(28vw, 8px, 0);
+  }
+  50% {
+    transform: translate3d(55vw, -6px, 0);
+  }
+  75% {
+    transform: translate3d(80vw, 6px, 0);
+  }
+  98% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(calc(100vw + 50px), 0, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes thenga-bird-flight-3 {
+  0% {
+    transform: translate3d(-40px, 0, 0);
+    opacity: 0;
+  }
+  2% {
+    opacity: 0.65;
+  }
+  30% {
+    transform: translate3d(32vw, -8px, 0);
+  }
+  60% {
+    transform: translate3d(62vw, 4px, 0);
+  }
+  98% {
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate3d(calc(100vw + 40px), -4px, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes thenga-bird-wing-flap {
+  0%, 49.9% {
+    transform: translateY(0);
+  }
+  50%, 100% {
+    transform: translateY(3px) scaleY(-0.7);
+  }
+}
+
+.thenga-bird-flyer-1 {
+  position: absolute;
+  top: 13%;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+  animation: thenga-bird-flight-1 34s linear infinite;
+  will-change: transform;
+}
+
+.thenga-bird-flyer-2 {
+  position: absolute;
+  top: 22%;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+  animation: thenga-bird-flight-2 42s linear infinite;
+  animation-delay: -16s;
+  will-change: transform;
+}
+
+.thenga-bird-flyer-3 {
+  position: absolute;
+  top: 16%;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+  animation: thenga-bird-flight-3 52s linear infinite;
+  animation-delay: -33s;
+  will-change: transform;
+}
+
+.thenga-bird-wings {
+  animation: thenga-bird-wing-flap 360ms steps(1) infinite;
+  transform-origin: 6px 4px;
+}
+
+.thenga-bird-wings-slow {
+  animation: thenga-bird-wing-flap 460ms steps(1) infinite;
+  transform-origin: 6px 4px;
+}
+

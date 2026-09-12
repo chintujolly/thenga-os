@@ -311,8 +311,57 @@ export default function PixelScenery() {
         </g>
       </svg>
 
+      {/* Subtle Flying Pixel Birds / Crows in the Sky */}
+      <div className="thenga-bird-flyer-1" aria-hidden="true">
+        <FlyingPixelCrow size={16} wingClass="thenga-bird-wings" />
+      </div>
+      <div className="thenga-bird-flyer-2" aria-hidden="true">
+        <FlyingPixelCrow size={13} wingClass="thenga-bird-wings-slow" />
+      </div>
+      <div className="thenga-bird-flyer-3" aria-hidden="true">
+        <FlyingPixelCrow size={10} wingClass="thenga-bird-wings" />
+      </div>
+
       {/* Interactive Perching Crow on the powerline */}
       <PixelCrow />
     </div>
+  );
+}
+
+/**
+ * FlyingPixelCrow: Subtle pixel-art crow flying gently across the sky.
+ * Pure pixel edges, dark silhouette, yellow beak, and 2-frame flapping wings.
+ */
+function FlyingPixelCrow({ size = 16, wingClass = "thenga-bird-wings" }: { size?: number; wingClass?: string }) {
+  return (
+    <svg
+      width={size}
+      height={Math.round(size * 0.7)}
+      viewBox="0 0 16 11"
+      shapeRendering="crispEdges"
+      className="drop-shadow-xs select-none pointer-events-none"
+      aria-hidden="true"
+    >
+      {/* Body, head & tail in silhouette */}
+      <g fill="#16110d">
+        <rect x={4} y={4} width={6} height={4} />
+        <rect x={10} y={3} width={3} height={3} />
+        <rect x={1} y={5} width={3} height={2} />
+        <rect x={0} y={6} width={1} height={1} />
+      </g>
+      {/* Beak */}
+      <rect x={13} y={4} width={2} height={1} fill="#e59819" />
+      {/* Eye */}
+      <rect x={11} y={3} width={1} height={1} fill="#ffffff" />
+      {/* Feather shading */}
+      <rect x={5} y={7} width={4} height={1} fill="#2c2118" />
+
+      {/* Flapping Wings */}
+      <g className={wingClass}>
+        <rect x={5} y={1} width={4} height={3} fill="#16110d" />
+        <rect x={6} y={0} width={2} height={1} fill="#2c2118" />
+        <rect x={4} y={2} width={2} height={2} fill="#16110d" />
+      </g>
+    </svg>
   );
 }
